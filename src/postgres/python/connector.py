@@ -11,16 +11,20 @@ class PostgresSQL():
         self.database = "data_source"
         self.user = os.getenv("POSTGRES_USER")
         self.password = os.getenv("POSTGRES_PASSWORD")
- 
+        self._connection = None
+
     def connect(self):
-        connection = psycopg2.connect(
-            host=self.host,
-            port=self.port,
-            database=self.database,
-            user=self.user,
-            password=self.password
-        )
-        return connection
-    
+        if self._connection is None or self._connection.closed:
+            self._connection = psycopg2.connect(
+                host=self.host,
+                port=self.port,
+                database=self.database,
+                user=self.user,
+                password=self.password
+            )
+        return self._connection
+
     def close(self):
-        self.connect().close()
+        if self._connection and not self._connection.closed:
+            self._connection.close()
+            self._connection = None
