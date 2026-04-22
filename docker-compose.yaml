@@ -102,6 +102,71 @@ services:
       - schema-registry
     restart: unless-stopped
 
+  flink-jobmanager:
+    build: ./src/flink
+    command: jobmanager
+    ports:
+      - "8085:8081"
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 4
+        state.backend: rocksdb
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+        execution.checkpointing.interval: 10s
+    volumes:
+      - flink_data:/opt/flink/data
+      - flink_checkpoints:/opt/flink/checkpoints
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    healthcheck:
+      test: wget -qO- http://localhost:8081/overview || exit 1
+      start_period: 30s
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  flink-taskmanager:
+    build: ./src/flink
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 4
+        state.backend: rocksdb
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+    volumes:
+      - flink_data:/opt/flink/data
+      - flink_checkpoints:/opt/flink/checkpoints
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    restart: unless-stopped
+
+  flink-sql-client:
+    build: ./src/flink
+    command: bin/sql-client.sh
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        rest.address: flink-jobmanager
+        rest.port: 8081
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    profiles:
+      - flink-sql
+
 volumes:
   postgres_data:
   kafka_data:
+  flink_data:
+  flink_checkpoints:
