@@ -151,12 +151,14 @@ services:
 
   flink-sql-client:
     build: ./src/flink
-    command: bin/sql-client.sh
+    command: bin/sql-client.sh -i /opt/flink/sql/init.sql
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         rest.address: flink-jobmanager
         rest.port: 8081
+    volumes:
+      - ./src/flink/sql:/opt/flink/sql
     depends_on:
       flink-jobmanager:
         condition: service_healthy

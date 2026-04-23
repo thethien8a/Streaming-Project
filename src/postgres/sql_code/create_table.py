@@ -7,6 +7,8 @@ create_customers_table = """
     city VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE customers REPLICA IDENTITY FULL;
 """
 
 create_merchants_table = """
@@ -17,6 +19,8 @@ create_merchants_table = """
     category VARCHAR(50), -- Ví dụ: Food, Electronics, Fashion
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE merchants REPLICA IDENTITY FULL;
 """
 
 create_transactions_table = """
@@ -32,4 +36,6 @@ create_transactions_table = """
     transaction_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER TABLE transactions REPLICA IDENTITY FULL;
 """

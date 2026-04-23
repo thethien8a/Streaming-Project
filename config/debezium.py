@@ -19,6 +19,7 @@ CONNECTOR_CONFIG = {
         "table.include.list": "public.customers,public.merchants,public.transactions",
         "plugin.name": "pgoutput",
         "slot.name": "debezium_slot",
+        "snapshot.mode": "initial",
         "key.converter": "io.confluent.connect.avro.AvroConverter",
         "key.converter.schema.registry.url": "http://schema-registry:8081",
         "value.converter": "io.confluent.connect.avro.AvroConverter",
