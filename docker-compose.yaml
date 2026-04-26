@@ -167,6 +167,23 @@ services:
     profiles:
       - flink-sql
 
+  flink-job-submitter:
+    build: ./src/flink/job-submitter
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+      flink-taskmanager:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    environment:
+      JOBMANAGER_URL: http://flink-jobmanager:8081
+    restart: "no"
+    profiles:
+      - submit-jobs
+
 volumes:
   postgres_data:
   kafka_data:
