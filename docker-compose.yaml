@@ -180,7 +180,6 @@ services:
         condition: service_healthy
     environment:
       JOBMANAGER_URL: http://flink-jobmanager:8081
-    restart: "no"
     profiles:
       - submit-jobs
 

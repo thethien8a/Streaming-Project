@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 JOBMANAGER_URL="${JOBMANAGER_URL:-http://flink-jobmanager:8081}"

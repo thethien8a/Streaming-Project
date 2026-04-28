@@ -15,6 +15,6 @@ COPY --from=builder /app/target/flink-job-submitter-1.0.0.jar /opt/job/flink-job
 COPY submit.sh /opt/job/submit.sh
 
 USER root
-RUN chmod +x /opt/job/submit.sh
+RUN sed -i 's/\r$//' /opt/job/submit.sh && chmod +x /opt/job/submit.sh
 
 ENTRYPOINT ["/opt/job/submit.sh"]

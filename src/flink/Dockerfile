@@ -9,4 +9,3 @@ RUN wget -P /opt/flink/lib/ \
 # Docker volumes inherit flink:flink permissions on first init.
 RUN mkdir -p /opt/flink/checkpoints /opt/flink/savepoints \
     && chown -R flink:flink /opt/flink/checkpoints /opt/flink/savepoints
-
