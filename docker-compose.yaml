@@ -151,14 +151,12 @@ services:
 
   flink-sql-client:
     build: ./src/flink
-    command: bin/sql-client.sh -i /opt/flink/sql/init.sql
+    command: /opt/flink/bin/sql-client.sh 
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         rest.address: flink-jobmanager
         rest.port: 8081
-    volumes:
-      - ./src/flink/sql:/opt/flink/sql
     depends_on:
       flink-jobmanager:
         condition: service_healthy
@@ -182,9 +180,41 @@ services:
       JOBMANAGER_URL: http://flink-jobmanager:8081
     profiles:
       - submit-jobs
+  
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    ports:
+      - "8123:8123"   # HTTP interface (client port)
+      - "9000:9000"   # Native TCP
+      - "9009:9009"   # Inter-server (node to node communication)
+    environment:
+      CLICKHOUSE_DB: streaming
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+      # - ./src/clickhouse/init:/docker-entrypoint-initdb.d:ro
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    healthcheck:
+      test: wget -qO- http://localhost:8123/ping || exit 1
+      start_period: 20s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
   postgres_data:
   kafka_data:
   flink_data:
   flink_checkpoints:
+  clickhouse_data:
+  clickhouse_logs:
