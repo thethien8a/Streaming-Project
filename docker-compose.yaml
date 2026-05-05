@@ -40,6 +40,37 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # One-shot service: pre-creates Kafka topics BEFORE Flink jobs start, eliminating
+  # the UnknownTopicOrPartitionException race when one Flink job reads a topic that
+  # another Flink job has not yet produced to.
+  kafka-init:
+    image: quay.io/debezium/kafka:2.5
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        set -e
+        echo "Creating Kafka topics..."
+        # upsert-kafka sink REQUIRES log compaction so the latest value per key is retained
+        /kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+          --create --if-not-exists \
+          --topic processed.enriched_transactions \
+          --partitions 1 --replication-factor 1 \
+          --config cleanup.policy=compact \
+          --config min.cleanable.dirty.ratio=0.1 \
+          --config segment.ms=60000
+        # Aggregation topic: standard 7-day retention
+        /kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+          --create --if-not-exists \
+          --topic processed.merchant_revenue_1min \
+          --partitions 1 --replication-factor 1 \
+          --config retention.ms=604800000
+        echo "Topics created. Listing:"
+        /kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+    restart: "no"
+
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
     depends_on:
@@ -108,6 +139,10 @@ services:
     ports:
       - "8085:8081"
     environment:
+      # POSTGRES_* are referenced as ${...} in init.sql for the JDBC dimension lookups.
+      # The JAR's main() runs on the JobManager, so substitution reads from this container.
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:[REDACTED:password]}
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 4
@@ -122,6 +157,9 @@ services:
       kafka:
         condition: service_healthy
       schema-registry:
+        condition: service_healthy
+      # JDBC lookup join targets postgres at runtime; require it healthy before start.
+      postgres:
         condition: service_healthy
     healthcheck:
       test: wget -qO- http://localhost:8081/overview || exit 1
@@ -174,6 +212,8 @@ services:
         condition: service_started
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       schema-registry:
         condition: service_healthy
     environment:
