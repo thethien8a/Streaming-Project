@@ -142,7 +142,7 @@ services:
       # POSTGRES_* are referenced as ${...} in init.sql for the JDBC dimension lookups.
       # The JAR's main() runs on the JobManager, so substitution reads from this container.
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:[REDACTED:password]}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 4
@@ -218,6 +218,8 @@ services:
         condition: service_healthy
     environment:
       JOBMANAGER_URL: http://flink-jobmanager:8081
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     profiles:
       - submit-jobs
   
